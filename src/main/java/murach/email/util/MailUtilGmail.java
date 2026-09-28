@@ -1,52 +1,81 @@
 package murach.email.util;
 
-import java.util.Properties;
-import jakarta.mail.*;
-import jakarta.mail.internet.*;
+import jakarta.mail.MessagingException;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.time.Duration;
 
 public class MailUtilGmail {
 
-    private static final String GMAIL_USERNAME = "minhgiauad2024@gmail.com";
-    private static final String GMAIL_PASSWORD = "jfvnfblhcvvugaxm";
+    // Webhook URL của Google Apps Script chạy qua cổng 443 HTTPS (Không bị Render chặn)
+    private static final String WEBHOOK_URL = System.getenv("MAIL_WEBHOOK_URL") != null
+            ? System.getenv("MAIL_WEBHOOK_URL")
+            : "https://script.google.com/macros/s/AKfycbwBGh_6dRvBKn-v9nfcRQuhjJJv4DXFaIWOLSFrc3fpB-zk_3Ox0x_d3UuJqC7z_br17Q/exec";
 
     public static void sendMail(String to, String from,
             String subject, String body, boolean bodyIsHTML)
             throws MessagingException {
 
-        // 1 - get a mail session (SMTP STARTTLS qua cổng 587)
-        Properties props = new Properties();
-        props.put("mail.transport.protocol", "smtp");
-        props.put("mail.smtp.host", "smtp.gmail.com");
-        props.put("mail.smtp.port", "587");
-        props.put("mail.smtp.auth", "true");
-        props.put("mail.smtp.starttls.enable", "true");
-        props.put("mail.smtp.starttls.required", "true");
-        props.put("mail.smtp.ssl.protocols", "TLSv1.2 TLSv1.3");
-        props.put("mail.smtp.ssl.trust", "smtp.gmail.com");
-        props.put("mail.smtp.quitwait", "false");
-        
-        Session session = Session.getInstance(props);
-        session.setDebug(true);
+        try {
+            // Chuẩn bị payload JSON
+            String escapedSubject = escapeJson(subject);
+            String escapedBody = escapeJson(body);
 
-        // 2 - create a message
-        Message message = new MimeMessage(session);
-        message.setSubject(subject);
-        if (bodyIsHTML) {
-            message.setContent(body, "text/html; charset=UTF-8");
-        } else {
-            message.setText(body);
+            String jsonPayload = "{"
+                    + "\"to\":\"" + to + "\","
+                    + "\"subject\":\"" + escapedSubject + "\","
+                    + "\"body\":\"" + escapedBody + "\","
+                    + "\"isHTML\":" + bodyIsHTML
+                    + "}";
+
+            HttpClient client = HttpClient.newBuilder()
+                    .followRedirects(HttpClient.Redirect.NEVER)
+                    .connectTimeout(Duration.ofSeconds(15))
+                    .build();
+
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(WEBHOOK_URL))
+                    .timeout(Duration.ofSeconds(20))
+                    .header("Content-Type", "application/json; charset=UTF-8")
+                    .POST(HttpRequest.BodyPublishers.ofString(jsonPayload))
+                    .build();
+
+            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+
+            // Google Apps Script trả về 302 chuyển hướng đến trang kết quả JSON
+            if (response.statusCode() == 302) {
+                String location = response.headers().firstValue("location").orElse(null);
+                if (location != null) {
+                    HttpRequest getReq = HttpRequest.newBuilder()
+                            .uri(URI.create(location))
+                            .timeout(Duration.ofSeconds(20))
+                            .GET()
+                            .build();
+                    response = client.send(getReq, HttpResponse.BodyHandlers.ofString());
+                }
+            }
+
+            if (response.statusCode() != 200 || !response.body().contains("\"status\":\"success\"")) {
+                throw new MessagingException("Google Apps Script Error (Status " + response.statusCode() + "): " + response.body());
+            }
+
+        } catch (MessagingException me) {
+            throw me;
+        } catch (Exception e) {
+            throw new MessagingException("Failed to send email via Google Apps Script (port 443): " + e.getMessage(), e);
         }
+    }
 
-        // 3 - address the message
-        Address fromAddress = new InternetAddress(from != null && !from.isEmpty() ? from : GMAIL_USERNAME);
-        Address toAddress = new InternetAddress(to);
-        message.setFrom(fromAddress);
-        message.setRecipient(Message.RecipientType.TO, toAddress);
-
-        // 4 - send the message
-        Transport transport = session.getTransport("smtp");
-        transport.connect("smtp.gmail.com", 587, GMAIL_USERNAME, GMAIL_PASSWORD);
-        transport.sendMessage(message, message.getAllRecipients());
-        transport.close();
+    private static String escapeJson(String s) {
+        if (s == null) return "";
+        return s.replace("\\", "\\\\")
+                .replace("\"", "\\\"")
+                .replace("\b", "\\b")
+                .replace("\f", "\\f")
+                .replace("\n", "\\n")
+                .replace("\r", "\\r")
+                .replace("\t", "\\t");
     }
 }
