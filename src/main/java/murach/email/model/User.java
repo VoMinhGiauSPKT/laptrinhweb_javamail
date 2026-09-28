@@ -9,7 +9,7 @@ import jakarta.persistence.Table;
 import jakarta.persistence.Column;
 
 @Entity
-@Table(name = "User")
+@Table(name = "\"User\"")
 public class User implements Serializable {
 
     @Id

@@ -15,8 +15,6 @@
             <!-- Hiển thị SQL trong console khi thực thi -->
             <property name="hibernate.show_sql" value="true"/>
             <property name="hibernate.format_sql" value="true"/>
-            <!-- Tự động trích dẫn bảng User (\"User\" trên PostgreSQL, `User` trên MySQL) -->
-            <property name="hibernate.globally_quoted_identifiers" value="true"/>
         </properties>
     </persistence-unit>
 </persistence>
