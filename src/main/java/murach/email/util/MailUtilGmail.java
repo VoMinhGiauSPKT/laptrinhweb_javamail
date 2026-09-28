@@ -13,16 +13,19 @@ public class MailUtilGmail {
             String subject, String body, boolean bodyIsHTML)
             throws MessagingException {
 
-        // 1 - get a mail session
+        // 1 - get a mail session (SMTP STARTTLS qua cổng 587)
         Properties props = new Properties();
-        props.put("mail.transport.protocol", "smtps");
-        props.put("mail.smtps.host", "smtp.gmail.com");
-        props.put("mail.smtps.port", 465);
-        props.put("mail.smtps.auth", "true");
-        props.put("mail.smtps.ssl.enable", "true");
-        props.put("mail.smtps.quitwait", "false");
+        props.put("mail.transport.protocol", "smtp");
+        props.put("mail.smtp.host", "smtp.gmail.com");
+        props.put("mail.smtp.port", "587");
+        props.put("mail.smtp.auth", "true");
+        props.put("mail.smtp.starttls.enable", "true");
+        props.put("mail.smtp.starttls.required", "true");
+        props.put("mail.smtp.ssl.protocols", "TLSv1.2 TLSv1.3");
+        props.put("mail.smtp.ssl.trust", "smtp.gmail.com");
+        props.put("mail.smtp.quitwait", "false");
         
-        Session session = Session.getDefaultInstance(props);
+        Session session = Session.getInstance(props);
         session.setDebug(true);
 
         // 2 - create a message
@@ -41,8 +44,8 @@ public class MailUtilGmail {
         message.setRecipient(Message.RecipientType.TO, toAddress);
 
         // 4 - send the message
-        Transport transport = session.getTransport();
-        transport.connect(GMAIL_USERNAME, GMAIL_PASSWORD);
+        Transport transport = session.getTransport("smtp");
+        transport.connect("smtp.gmail.com", 587, GMAIL_USERNAME, GMAIL_PASSWORD);
         transport.sendMessage(message, message.getAllRecipients());
         transport.close();
     }

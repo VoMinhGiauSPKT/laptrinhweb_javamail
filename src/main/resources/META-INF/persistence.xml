@@ -15,6 +15,8 @@
             <!-- Hiển thị SQL trong console khi thực thi -->
             <property name="hibernate.show_sql" value="true"/>
             <property name="hibernate.format_sql" value="true"/>
+            <!-- Tự động tạo / cập nhật bảng trong CSDL nếu chưa tồn tại -->
+            <property name="hibernate.hbm2ddl.auto" value="update"/>
         </properties>
     </persistence-unit>
 </persistence>
