@@ -1,0 +1,61 @@
+body {
+    font-family: Arial, Helvetica, sans-serif;
+    margin: 30px;
+}
+
+h1 {
+    color: #008080;
+    font-size: 22px;
+}
+
+.message {
+    color: red;
+    font-style: italic;
+    margin-bottom: 15px;
+}
+
+/* Định dạng từng dòng gồm label và giá trị/input */
+.form-row {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.form-row label {
+    width: 120px;
+    font-weight: bold;
+}
+
+.form-row span {
+    color: #000;
+}
+
+input[type="text"], input[type="email"] {
+    width: 250px;
+    padding: 4px;
+}
+
+.btn-container {
+    margin-left: 120px;
+    margin-top: 10px;
+}
+
+input[type="submit"], button, .btn {
+    padding: 4px 15px;
+    cursor: pointer;
+}
+
+.btn {
+    display: inline-block;
+    text-decoration: none;
+    background-color: #efefef;
+    color: #000;
+    border: 1px solid #767676;
+    border-radius: 2px;
+    font-size: 13.3333px;
+    line-height: normal;
+}
+
+.btn:hover {
+    background-color: #e5e5e5;
+}

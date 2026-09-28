@@ -1,0 +1,6 @@
+target/
+.git/
+.gitignore
+nbproject/
+nb-configuration.xml
+*.log
